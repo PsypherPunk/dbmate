@@ -13,6 +13,7 @@ import (
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/bigquery"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/clickhouse"
+	_ "github.com/amacneil/dbmate/v2/pkg/driver/databricks"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/mysql"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 )
