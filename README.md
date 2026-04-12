@@ -23,6 +23,7 @@ For a comparison between dbmate and other popular database schema migration tool
     - [SQLite](#sqlite)
     - [ClickHouse](#clickhouse)
     - [BigQuery](#bigquery)
+    - [Databricks](#databricks)
     - [Spanner](#spanner)
   - [Creating Migrations](#creating-migrations)
   - [Running Migrations](#running-migrations)
@@ -42,7 +43,7 @@ For a comparison between dbmate and other popular database schema migration tool
 
 ## Features
 
-- Supports MySQL, PostgreSQL, SQLite, and ClickHouse
+- Supports MySQL, PostgreSQL, SQLite, ClickHouse, BigQuery and Databricks
 - Uses plain SQL for writing schema migrations
 - Migrations are timestamp-versioned, to avoid version number conflicts with multiple developers
 - Migrations are run atomically inside a transaction
@@ -163,7 +164,7 @@ DATABASE_URL="postgres://postgres@127.0.0.1:5432/myapp_development?sslmode=disab
 protocol://username:password@host:port/database_name?options
 ```
 
-- `protocol` must be one of `mysql`, `postgres`, `postgresql`, `sqlite`, `sqlite3`, `clickhouse`
+- `protocol` must be one of `mysql`, `postgres`, `postgresql`, `sqlite`, `sqlite3`, `clickhouse`, `bigquery`, `databricks`
 - `username` and `password` must be URL encoded (you will get an error if you use special charactors)
 - `host` can be either a hostname or IP address
 - `options` are driver-specific (refer to the underlying Go SQL drivers if you wish to use these)
@@ -184,7 +185,7 @@ Dropping: myapp_test
 $ dbmate -e TEST_DATABASE_URL --no-dump-schema up
 Creating: myapp_test
 Applying: 20151127184807_create_users_table.sql
-Applied: 20151127184807_create_users_table.sql in 123¬µs
+Applied: 20151127184807_create_users_table.sql in 123µs
 ```
 
 Alternatively, you can specify the url directly on the command line:
@@ -359,6 +360,43 @@ bigquery://host:port/projectid/location/dataset?disable_auth=true
 
 `disable_auth` (optional) - Pass `true` to skip Authentication, use only for testing and connecting to emulator.
 
+#### Databricks
+
+Dbmate supports [Databricks](https://www.databricks.com/) via the official [databricks-sql-go](https://github.com/databricks/databricks-sql-go) driver. Databricks uses Unity Catalog, where a "database" in dbmate maps to a Databricks **schema** within a **catalog**.
+
+```sh
+DATABASE_URL="databricks://token:dapi1234567890ab@my-workspace.cloud.databricks.com:443/sql/1.0/endpoints/abcd1234?catalog=main&schema=myapp_development"
+```
+
+The URL format is:
+
+```
+databricks://token:<access_token>@<hostname>:<port>/<http_path>?catalog=<catalog>&schema=<schema>
+```
+
+- `token` - The literal string `token` as the username
+- `<access_token>` - A Databricks [personal access token](https://docs.databricks.com/en/dev-tools/auth/pat.html)
+- `<hostname>` - Your Databricks workspace hostname
+- `<port>` - Port number (typically `443`)
+- `<http_path>` - The HTTP path of your SQL warehouse (found in the warehouse connection details)
+- `catalog` (optional) - Unity Catalog catalog name (default: `main`)
+- `schema` (optional) - Schema name, this is the "database" that dbmate will create/drop (default: `default`)
+
+Databricks does not support transactional DDL. You must specify `transaction:false` on migrations that include DDL statements:
+
+```sql
+-- migrate:up transaction:false
+CREATE TABLE users (
+  id BIGINT,
+  name STRING
+);
+
+-- migrate:down transaction:false
+DROP TABLE users;
+```
+
+Additional query parameters are passed through to the underlying [databricks-sql-go](https://github.com/databricks/databricks-sql-go) driver.
+
 #### Spanner
 
 Spanner support is currently limited to databases using the [PostgreSQL Dialect](https://cloud.google.com/spanner/docs/postgresql-interface), which must be chosen during database creation. For future Spanner with GoogleSQL support, see [this discussion](https://github.com/amacneil/dbmate/discussions/369).
@@ -434,7 +472,7 @@ Run `dbmate up` to run any pending migrations.
 $ dbmate up
 Creating: myapp_development
 Applying: 20151127184807_create_users_table.sql
-Applied: 20151127184807_create_users_table.sql in 123¬µs
+Applied: 20151127184807_create_users_table.sql in 123µs
 Writing: ./db/schema.sql
 ```
 
@@ -463,7 +501,7 @@ Run `dbmate rollback` to roll back the most recent migration:
 ```sh
 $ dbmate rollback
 Rolling back: 20151127184807_create_users_table.sql
-Rolled back: 20151127184807_create_users_table.sql in 123¬µs
+Rolled back: 20151127184807_create_users_table.sql in 123µs
 Writing: ./db/schema.sql
 ```
 
@@ -546,7 +584,7 @@ mysqldump [default_options] [your_arguments_go_here] dbname
 for pg_dump:
 ```sh
 pg_dump [default_options] [your_arguments_go_here] dbname
-``` 
+```
 
 > Note: The `schema.sql` file will contain a complete schema for your database, even if some tables or columns were created outside of dbmate migrations.
 
@@ -687,7 +725,8 @@ Why another database schema migration tool? Dbmate was inspired by many other to
 | PostgreSQL                                                   |              :white_check_mark:              |            :white_check_mark:             |                  :white_check_mark:                  |                     :white_check_mark:                      |                             :white_check_mark:                              |                            :white_check_mark:                            |       :white_check_mark:        |      :white_check_mark:       |
 | MySQL                                                        |              :white_check_mark:              |            :white_check_mark:             |                  :white_check_mark:                  |                     :white_check_mark:                      |                             :white_check_mark:                              |                            :white_check_mark:                            |       :white_check_mark:        |      :white_check_mark:       |
 | SQLite                                                       |              :white_check_mark:              |            :white_check_mark:             |                  :white_check_mark:                  |                     :white_check_mark:                      |                             :white_check_mark:                              |                            :white_check_mark:                            |       :white_check_mark:        |      :white_check_mark:       |
-| Cli—ÅkHouse                                                   |              :white_check_mark:              |                                           |                                                      |                     :white_check_mark:                      |                             :white_check_mark:                              |                            :white_check_mark:                            |                                 |
+| Cli?kHouse                                                   |              :white_check_mark:              |                                           |                                                      |                     :white_check_mark:                      |                             :white_check_mark:                              |                            :white_check_mark:                            |                                 |
+| Databricks                                                   |              :white_check_mark:              |                                           |                                                      |                                                             |                                                                             |                                                                          |                                 |
 
 _If you notice any inaccuracies in this table, please [propose a change](https://github.com/amacneil/dbmate/edit/main/README.md)._
 
