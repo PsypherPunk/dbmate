@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	// Register Databricks driver.
 	_ "github.com/databricks/databricks-sql-go"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
